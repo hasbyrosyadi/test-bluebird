@@ -12,6 +12,24 @@ type User struct {
 	Name      string
 	Email     string
 	Password  string
-	role      string
-	IsLogin   int
+	Address   string
+	Role      string
+	IsLogin   bool
+}
+
+type Register struct {
+	Name            string `schema:"name"`
+	Email           string `schema:"email"`
+	Password        string `schema:"password"`
+	ConfirmPassword string `schema:"confirm_password"`
+	Address         string `schema:"address"`
+}
+
+type Login struct {
+	Email    string `schema:"email"`
+	Password string `schema:"password"`
+}
+
+type Logout struct {
+	Email string `schema:"email"`
 }

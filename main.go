@@ -31,14 +31,17 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	// userRepository := repository.NewUser(db)
+	userRepository := repository.NewUser(db)
 	// cartRepository := repository.NewCart(db)
 	// orderRepository := repository.NewOrder(db)
 	productRepository := repository.NewProduct(db)
 
-	productUsecase := usecase.NewProduct(productRepository)
+	productUsecase := usecase.NewProduct(productRepository, userRepository)
 	api.NewProductHandler(router, productUsecase)
 
-	log.Fatal(http.ListenAndServe(":10000", nil))
+	userUsecase := usecase.NewUser(userRepository)
+	api.NewUserHandler(router, userUsecase)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 
 }
