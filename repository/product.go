@@ -21,7 +21,7 @@ type ProductRepository interface {
 func (p *Product) GetAllProduct() ([]model.Product, error) {
 	product := []model.Product{}
 	err := p.db.Find(product).Error
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 	return product, nil

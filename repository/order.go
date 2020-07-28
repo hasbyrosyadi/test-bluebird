@@ -11,11 +11,11 @@ type Order struct {
 }
 
 func NewOrder(d *gorm.DB) OrderRepository {
-	return &Product{db: d}
+	return &Order{db: d}
 }
 
 type OrderRepository interface {
-	GetAllProduct() ([]model.Product, error)
+	GetAllProduct() ([]model.Order, error)
 }
 
 func (o *Order) GetAllProduct() ([]model.Order, error) {

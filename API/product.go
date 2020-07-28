@@ -17,13 +17,12 @@ func (p *Product) GetAllProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		w.Write([]byte("Server Error"))
 		return
 	}
 
 	response := Success(product)
-	respBody, err := json.Marshal(response)
-
+	respBody, _ := json.Marshal(response)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.HTTPStatusCode)
 	w.Write(respBody)

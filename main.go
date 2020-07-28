@@ -5,6 +5,8 @@ import (
 	"bluebird/repository"
 	"bluebird/usecase"
 	"fmt"
+	"log"
+	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -25,7 +27,9 @@ func main() {
 		fmt.Println(err)
 	}
 
-	router := mux.NewRouter()
+	defer db.Close()
+
+	router := mux.NewRouter().StrictSlash(true)
 
 	// userRepository := repository.NewUser(db)
 	// cartRepository := repository.NewCart(db)
@@ -34,5 +38,7 @@ func main() {
 
 	productUsecase := usecase.NewProduct(productRepository)
 	api.NewProductHandler(router, productUsecase)
+
+	log.Fatal(http.ListenAndServe(":10000", nil))
 
 }
