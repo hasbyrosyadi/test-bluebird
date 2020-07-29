@@ -15,13 +15,39 @@ func NewCart(d *gorm.DB) CartRepository {
 }
 
 type CartRepository interface {
-	GetAllProduct() ([]model.Cart, error)
+	GetActiveCart(userId int) (*model.Cart, error)
+	GetCartById(id int) (*model.Cart, error)
+	InsertCart(cart *model.Cart) (*model.Cart, error)
+	UpdateCart(cart *model.Cart) (*model.Cart, error)
 }
 
-func (c *Cart) GetAllProduct() ([]model.Cart, error) {
-	cart := []model.Cart{}
-	err := c.db.Find(cart).Error
-	if err != nil {
+func (c *Cart) GetActiveCart(userId int) (*model.Cart, error) {
+	cart := &model.Cart{}
+	err := c.db.Where("user_id = ? AND order_id IS NULL", userId).First(&cart).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return cart, nil
+}
+
+func (c *Cart) GetCartById(id int) (*model.Cart, error) {
+	cart := &model.Cart{}
+	err := c.db.Where("id = ?", id).First(&cart).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	return cart, nil
+}
+
+func (c *Cart) InsertCart(cart *model.Cart) (*model.Cart, error) {
+	if err := c.db.Create(cart).Error; err != nil {
+		return nil, err
+	}
+	return cart, nil
+}
+
+func (c *Cart) UpdateCart(cart *model.Cart) (*model.Cart, error) {
+	if err := c.db.Save(cart).Error; err != nil {
 		return nil, err
 	}
 	return cart, nil

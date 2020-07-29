@@ -10,10 +10,19 @@ type Product struct {
 	UpdatedAt   time.Time  `json:"_"`
 	DeletedAt   *time.Time `json:"_"`
 	ProductName string     `json:"product_name"`
+	Price       float64    `json:"Price"`
 	Stock       int        `json:"stock"`
 }
 
 type ReqProduct struct {
-	ProductName string `schema:"product_name"`
-	Stock       int    `schema:"stock"`
+	ProductName string  `schema:"product_name"`
+	Price       float64 `schema:"price"`
+	Stock       int     `schema:"stock"`
+}
+
+type EditProduct struct {
+	Id          int     `schema:"id"`
+	ProductName string  `schema:"product_name"`
+	Price       float64 `schema:"price"`
+	Stock       int     `schema:"stock"`
 }

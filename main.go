@@ -32,8 +32,9 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	userRepository := repository.NewUser(db)
-	// cartRepository := repository.NewCart(db)
-	// orderRepository := repository.NewOrder(db)
+	cartRepository := repository.NewCart(db)
+	orderRepository := repository.NewOrder(db)
+	historyOrderRepository := repository.NewHistoryOrder(db)
 	productRepository := repository.NewProduct(db)
 
 	productUsecase := usecase.NewProduct(productRepository, userRepository)
@@ -41,6 +42,12 @@ func main() {
 
 	userUsecase := usecase.NewUser(userRepository)
 	api.NewUserHandler(router, userUsecase)
+
+	cartUsecase := usecase.NewCart(cartRepository, productRepository, userRepository)
+	api.NewCartHandler(router, cartUsecase)
+
+	orderUsecase := usecase.NewOrder(orderRepository, historyOrderRepository, cartRepository, productRepository, userRepository)
+	api.NewOrderHandler(router, orderUsecase)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 
