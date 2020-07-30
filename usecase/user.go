@@ -22,22 +22,20 @@ func NewUser(u repository.UserRepository) UserUsecase {
 
 func (u *User) Register(regis *model.Register) error {
 
-	if regis.Name == "" || regis.Email == "" || regis.Password == "" || regis.ConfirmPassword == "" {
+	// verifikasi data input
+	if regis.Name == "" || regis.Email == "" || regis.Password == "" || regis.ConfirmPassword == "" || regis.Address == "" {
 		return errors.New("Missing Parameter")
 	}
 
+	// verifikasi password
 	if regis.Password != regis.ConfirmPassword {
 		return errors.New("Invalid Password")
 	}
 
-	newUser := &model.User{
-		Name:     regis.Name,
-		Email:    regis.Email,
-		Password: regis.Password,
-		Address:  regis.Address,
-		Role:     "USER",
-	}
+	// validasi form
+	newUser := model.Regis(regis)
 
+	// insert to database user
 	err := u.UserRepository.InsertUser(newUser)
 	if err != nil {
 		return errors.New("Internal Server Error")
@@ -48,10 +46,12 @@ func (u *User) Register(regis *model.Register) error {
 
 func (u *User) Login(login *model.Login) error {
 
+	// verifikasi data input
 	if login.Email == "" || login.Password == "" {
 		return errors.New("Missing Parameter")
 	}
 
+	// get user berdasarkan email
 	user, err := u.UserRepository.GetUser(login.Email)
 	if err != nil {
 		return errors.New("Internal Server Error")
@@ -61,12 +61,14 @@ func (u *User) Login(login *model.Login) error {
 		return errors.New("User Not Found")
 	}
 
+	// validasi password user dengan input
 	if user.Password != login.Password {
 		return errors.New("Invalid Password")
 	}
 
 	user.IsLogin = true
 
+	// update is_login menjadi true
 	err = u.UserRepository.UpdateUser(user)
 	if err != nil {
 		return errors.New("Internal Server Error")
@@ -77,10 +79,12 @@ func (u *User) Login(login *model.Login) error {
 
 func (u *User) Logout(logout *model.Logout) error {
 
+	// verifikasi data input
 	if logout.Email == "" {
 		return errors.New("Missing Parameter")
 	}
 
+	// get user berdasarkan email
 	user, err := u.UserRepository.GetUser(logout.Email)
 	if err != nil {
 		return errors.New("Internal Server Error")
@@ -92,6 +96,7 @@ func (u *User) Logout(logout *model.Logout) error {
 
 	user.IsLogin = false
 
+	// update is_login menjadi false
 	err = u.UserRepository.UpdateUser(user)
 	if err != nil {
 		return errors.New("Internal Server Error")

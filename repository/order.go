@@ -17,7 +17,7 @@ func NewOrder(d *gorm.DB) OrderRepository {
 type OrderRepository interface {
 	GetActiveOrder(userId int) (*model.Order, error)
 	GetOrderUnpaidById(id int) (*model.Order, error)
-	PaidOrder(order *model.Order, confiqCart []model.ConfigProduct) (*model.Order, error)
+	PaidOrder(order *model.Order, confiqCart []model.DetailConfig) (*model.Order, error)
 	CreateOrder(order *model.Order) (*model.Order, error)
 }
 
@@ -72,7 +72,7 @@ func (o *Order) CreateOrder(order *model.Order) (*model.Order, error) {
 	return order, nil
 }
 
-func (o *Order) PaidOrder(order *model.Order, confiqCart []model.ConfigProduct) (*model.Order, error) {
+func (o *Order) PaidOrder(order *model.Order, confiqCart []model.DetailConfig) (*model.Order, error) {
 	var err error
 	tx := o.db.Begin()
 	defer func() {

@@ -41,7 +41,7 @@ func (p *Product) GetProductById(id int) (*model.Product, error) {
 }
 
 func (p *Product) UpdateProduct(product *model.Product) error {
-	if err := p.db.Save(&product).Error; err != nil {
+	if err := p.db.Save(product).Error; err != nil {
 		return err
 	}
 	return nil

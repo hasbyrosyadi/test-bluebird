@@ -27,19 +27,24 @@ func NewOrder(o repository.OrderRepository, h repository.HistoryOrderRepository,
 
 func (o *Order) PostOrder(email string, cartId int) (*model.RespOrder, error) {
 
+	// get user berdasarkan email
 	user, err := o.UserRepository.GetUser(email)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if user.IsLogin != true || user.Id == 0 {
-		return nil, errors.New("Access Denied")
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return nil, err
 	}
 
+	// verifikasi input
 	if cartId == 0 {
 		return nil, errors.New("Missing Parameter")
 	}
 
+	// verifikasi order apakah sudah di submit atau belum
 	activeOrder, err := o.OrderRepository.GetActiveOrder(user.Id)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
@@ -49,43 +54,27 @@ func (o *Order) PostOrder(email string, cartId int) (*model.RespOrder, error) {
 		return nil, errors.New("Please complete your bill")
 	}
 
+	// verifikasi cart apakah sudah di order atau belum
 	cart, err := o.CartRepository.GetCartById(cartId)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if cart.Id == 0 {
+	// validasi apabila bukan user tersebut yang melakukan transaksi
+	if cart.Id == 0 || cart.UserId != user.Id {
 		return nil, errors.New("Cart not Found")
 	}
 
-	var confiqCart []model.ConfigProduct
-	if err := json.Unmarshal([]byte(cart.ConfigProduct), &confiqCart); err != nil {
-		return nil, errors.New("Type Config is wrong")
+	// get all product
+	allProduct, err := o.ProductRepository.GetAllProduct()
+	if err != nil {
+		return nil, errors.New("Internal Server Error")
 	}
 
-	var respConfigCart []model.DetailConfig
-
-	for _, data := range confiqCart {
-
-		product, err := o.ProductRepository.GetProductById(data.Id)
-		if err != nil {
-			return nil, errors.New("Internal Server Error")
-		}
-
-		if product.Stock == 0 || product.Stock < data.Quantity {
-			return nil, errors.New("Product out of stock")
-		}
-
-		if product.Price != data.Price {
-			return nil, errors.New("Price was Changed")
-		}
-
-		respConfigCart = append(respConfigCart, model.DetailConfig{
-			Id:          product.Id,
-			ProductName: product.ProductName,
-			Price:       data.Price,
-			Quantity:    data.Quantity,
-		})
+	// configurasi cart
+	_, _, respConfigCart, err := model.ConfigProductOrder(cart.ConfigProduct, allProduct)
+	if err != nil {
+		return nil, err
 	}
 
 	postOrder := &model.Order{
@@ -99,6 +88,7 @@ func (o *Order) PostOrder(email string, cartId int) (*model.RespOrder, error) {
 		Status:        "UNPAID",
 	}
 
+	// create order dan menambah history order
 	dataOrder, err := o.OrderRepository.CreateOrder(postOrder)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
@@ -121,59 +111,48 @@ func (o *Order) PostOrder(email string, cartId int) (*model.RespOrder, error) {
 
 func (o *Order) PaidOrder(email string, orderId int) (*model.RespOrder, error) {
 
+	// get user berdasarkan email
 	user, err := o.UserRepository.GetUser(email)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if user.IsLogin != true || user.Id == 0 {
-		return nil, errors.New("Access Denied")
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return nil, err
 	}
 
+	// verifikasi input
 	if orderId == 0 {
 		return nil, errors.New("Missing Parameter")
 	}
 
+	// get order user yang masih berstatus UNPAID
 	order, err := o.OrderRepository.GetOrderUnpaidById(orderId)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if order.Id == 0 {
+	// validasi apabila bukan user tersebut yang melakukan transaksi
+	if order.Id == 0 || order.UserId != user.Id {
 		return nil, errors.New("Order not found")
 	}
 
-	var confiqCart []model.ConfigProduct
-	if err := json.Unmarshal([]byte(order.ConfigProduct), &confiqCart); err != nil {
-		return nil, errors.New("Type Config is wrong")
+	// get all product
+	allProduct, err := o.ProductRepository.GetAllProduct()
+	if err != nil {
+		return nil, errors.New("Internal Server Error")
 	}
 
-	var respConfigCart []model.DetailConfig
-
-	for _, data := range confiqCart {
-
-		product, err := o.ProductRepository.GetProductById(data.Id)
-		if err != nil {
-			return nil, errors.New("Internal Server Error")
-		}
-
-		if product.Stock == 0 || product.Stock < data.Quantity {
-			return nil, errors.New("Product out of stock")
-		}
-
-		if product.Price != data.Price {
-			return nil, errors.New("Price was Changed")
-		}
-
-		respConfigCart = append(respConfigCart, model.DetailConfig{
-			Id:          product.Id,
-			ProductName: product.ProductName,
-			Price:       data.Price,
-			Quantity:    data.Quantity,
-		})
+	// configurasi cart
+	_, _, respConfigCart, err := model.ConfigProductOrder(order.ConfigProduct, allProduct)
+	if err != nil {
+		return nil, err
 	}
 
-	dataOrder, err := o.OrderRepository.PaidOrder(order, confiqCart)
+	// ubah status jadi paid, pengurangan stock di product dan menambah history order
+	dataOrder, err := o.OrderRepository.PaidOrder(order, respConfigCart)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
@@ -195,15 +174,19 @@ func (o *Order) PaidOrder(email string, orderId int) (*model.RespOrder, error) {
 
 func (o *Order) HistoryOrder(email string) ([]model.RespOrder, error) {
 
+	// get user berdasarkan email
 	user, err := o.UserRepository.GetUser(email)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if user.IsLogin != true || user.Id == 0 {
-		return nil, errors.New("Access Denied")
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return nil, err
 	}
 
+	// get all history user login
 	historys, err := o.HistoryOrderRepository.GetAllHistory(user.Id)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
@@ -213,6 +196,7 @@ func (o *Order) HistoryOrder(email string) ([]model.RespOrder, error) {
 
 	for _, history := range historys {
 
+		// unmarshal config product
 		var confiqCart []model.ConfigProduct
 		if err := json.Unmarshal([]byte(history.ConfigProduct), &confiqCart); err != nil {
 			return nil, errors.New("Type Config is wrong")

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"time"
 )
 
@@ -32,4 +33,29 @@ type Login struct {
 
 type Logout struct {
 	Email string `schema:"email"`
+}
+
+func Regis(regis *Register) *User {
+	newUser := &User{
+		Name:     regis.Name,
+		Email:    regis.Email,
+		Password: regis.Password,
+		Address:  regis.Address,
+		Role:     "USER",
+	}
+	return newUser
+}
+
+func (u *User) IsAdmin() error {
+	if u.Role != "ADMIN" {
+		return errors.New("Access Denied")
+	}
+	return nil
+}
+
+func (u *User) IsLoginUser() error {
+	if u.IsLogin != true || u.Id == 0 {
+		return errors.New("Access Denied")
+	}
+	return nil
 }

@@ -31,11 +31,11 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	productRepository := repository.NewProduct(db)
 	userRepository := repository.NewUser(db)
 	cartRepository := repository.NewCart(db)
 	orderRepository := repository.NewOrder(db)
 	historyOrderRepository := repository.NewHistoryOrder(db)
-	productRepository := repository.NewProduct(db)
 
 	productUsecase := usecase.NewProduct(productRepository, userRepository)
 	api.NewProductHandler(router, productUsecase)

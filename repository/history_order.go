@@ -20,7 +20,7 @@ type HistoryOrderRepository interface {
 
 func (h *HistoryOrder) GetAllHistory(userId int) ([]model.HistoryOrder, error) {
 	historyOrder := []model.HistoryOrder{}
-	err := h.db.Order("created_at DESC").Find(&historyOrder).Error
+	err := h.db.Where("user_id = ?", userId).Order("created_at DESC").Find(&historyOrder).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}

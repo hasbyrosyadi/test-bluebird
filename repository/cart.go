@@ -32,7 +32,7 @@ func (c *Cart) GetActiveCart(userId int) (*model.Cart, error) {
 
 func (c *Cart) GetCartById(id int) (*model.Cart, error) {
 	cart := &model.Cart{}
-	err := c.db.Where("id = ?", id).First(&cart).Error
+	err := c.db.Where("id = ? AND order_id IS NULL", id).First(&cart).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}

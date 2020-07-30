@@ -23,6 +23,7 @@ func NewProduct(p repository.ProductRepository, u repository.UserRepository) Pro
 }
 
 func (p *Product) GetAllProduct() ([]model.Product, error) {
+	// menampilkan seluruh product
 	product, err := p.ProductRepository.GetAllProduct()
 	if err != nil {
 		return nil, errors.New("Server Error")
@@ -32,26 +33,32 @@ func (p *Product) GetAllProduct() ([]model.Product, error) {
 
 func (p *Product) AddProduct(email string, product *model.ReqProduct) error {
 
+	// get user berdasarkan email
 	user, err := p.UserRepository.GetUser(email)
 	if err != nil {
 		return errors.New("Internal Server Error")
 	}
 
-	if user.Role != "ADMIN" || user.IsLogin != true || user.Id == 0 {
-		return errors.New("Access Denied")
+	// validasi user sebagai admin
+	err = user.IsAdmin()
+	if err != nil {
+		return err
 	}
 
-	if product.ProductName == "" || product.Price == 0 || product.Stock == 0 {
-		return errors.New("Missing Parameter")
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return err
 	}
 
-	addProduct := &model.Product{
-		ProductName: product.ProductName,
-		Price:       product.Price,
-		Stock:       product.Stock,
+	// validasi product input
+	newProduct, err := model.AddProduct(product)
+	if err != nil {
+		return err
 	}
 
-	err = p.ProductRepository.InsertProduct(addProduct)
+	// insert product
+	err = p.ProductRepository.InsertProduct(newProduct)
 	if err != nil {
 		return errors.New("Internal Server Error")
 	}
@@ -61,40 +68,41 @@ func (p *Product) AddProduct(email string, product *model.ReqProduct) error {
 
 func (p *Product) EditProduct(email string, product *model.EditProduct) (*model.Product, error) {
 
+	// get user berdasarkan email
 	user, err := p.UserRepository.GetUser(email)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if user.Role != "ADMIN" || user.IsLogin != true || user.Id == 0 {
-		return nil, errors.New("Access Denied")
+	// validasi user sebagai admin
+	err = user.IsAdmin()
+	if err != nil {
+		return nil, err
 	}
 
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return nil, err
+	}
+
+	// validasi kalo product tersebut terdaftar
 	dataProduct, err := p.ProductRepository.GetProductById(product.Id)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if product.ProductName == "" || product.Price == 0 || product.Stock == 0 {
-		return nil, errors.New("Missing Parameter")
+	if dataProduct.Id == 0 {
+		return nil, errors.New("Product not found")
 	}
 
-	var isUpdated bool
-	if dataProduct.ProductName != product.ProductName {
-		dataProduct.ProductName = product.ProductName
-		isUpdated = true
+	// validasi serta update kolom yang mau diubah
+	isUpdated, err := dataProduct.UpdateProduct(product)
+	if err != nil {
+		return nil, err
 	}
 
-	if dataProduct.Price != product.Price {
-		dataProduct.Price = product.Price
-		isUpdated = true
-	}
-
-	if dataProduct.Stock != product.Stock {
-		dataProduct.Stock = product.Stock
-		isUpdated = true
-	}
-
+	// update product
 	if isUpdated {
 		err = p.ProductRepository.UpdateProduct(dataProduct)
 		if err != nil {
@@ -107,15 +115,25 @@ func (p *Product) EditProduct(email string, product *model.EditProduct) (*model.
 
 func (p *Product) DeleteProduct(email string, id int) error {
 
+	// get user berdasarkan email
 	user, err := p.UserRepository.GetUser(email)
 	if err != nil {
 		return errors.New("Internal Server Error")
 	}
 
-	if user.Role != "ADMIN" || user.IsLogin != true || user.Id == 0 {
-		return errors.New("Access Denied")
+	// validasi user sebagai admin
+	err = user.IsAdmin()
+	if err != nil {
+		return err
 	}
 
+	// validasi user login dan sudah terdaftar
+	err = user.IsLoginUser()
+	if err != nil {
+		return err
+	}
+
+	// validasi kalo product tersebut terdaftar
 	dataProduct, err := p.ProductRepository.GetProductById(id)
 	if err != nil {
 		return errors.New("Internal Server Error")
@@ -125,6 +143,7 @@ func (p *Product) DeleteProduct(email string, id int) error {
 		return errors.New("Product not Found")
 	}
 
+	// delete product secara soft delete
 	err = p.ProductRepository.DeleteProduct(id)
 	if err != nil {
 		return errors.New("Internal Server Error")

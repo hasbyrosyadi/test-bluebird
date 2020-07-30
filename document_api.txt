@@ -1,0 +1,117 @@
+Requirement:
+
+Golang
+dep (https://github.com/golang/dep)
+mysql (https://github.com/go-sql-driver/mysql)
+schema (https://github.com/gorilla/schema)
+mux (https://github.com/gorilla/mux)
+gorm (github.com/jinzhu/gorm)
+
+
+::::::::::::::::::::::::::Document:::::::::::::::::::::::::::::::
+
+host : http://localhost:8080
+role admin: email = admin@gmail.com , password = admin1234
+
+LIST API
+1. /register
+merupakan API untuk mendaftarkan User kedalam sistem. secara default role yang di berikan adalah "USER" dengan status "is_login" adalah false (belum login).
+
+header:
+tidak ada
+
+input: 
+name, email, password, confirm_password
+
+2. /login
+merupakan API untuk masuk kedalam sistem dan memberi akses pada beberapa API yang memerlukan permission.
+
+header:
+tidak ada
+
+input:
+email, password
+
+3. /logout
+merupakan API untuk keluar dari sistem.
+
+header:
+tidak ada
+
+input:
+email
+
+4. /products
+merupakan API untuk menampilkan semua product yang dimiliki, API ini tidak memiliki permission.
+
+header:
+tidak ada
+
+input:
+tidak ada
+
+5. /add_product
+merupakan API untuk menambah product, API ini hanya bisa di akses oleh user yang memiliki role "ADMIN" dan harus sudah login (is_login = true). untuk itu ganti role di database menjadi "ADMIN". untuk dapat akses API ini
+
+header:
+email
+
+input:
+product_name, price, stock
+
+6. /edit_product
+merupakan API untuk mengubah product, API ini hanya bisa di akses oleh user yang memiliki role "ADMIN" dan harus sudah login (is_login = true). untuk itu ganti role di database menjadi "ADMIN". untuk dapat akses API ini
+
+header:
+email
+
+input:
+product_name, price, stock
+
+7. /delete_product/{id}
+merupakan API untuk menghapus product (soft delete), API ini hanya bisa di akses oleh user yang memiliki role "ADMIN" dan harus sudah login (is_login = true). untuk itu ganti role di database menjadi "ADMIN". untuk dapat akses API ini
+
+header:
+email
+
+input:
+id (id di product)
+
+8. /add_to_cart
+merupakan API untuk memasukan list belanja kedalam keranjang. dapat melakukan penambahan quantity, penghapusan product dalam cart. API ini hanya bisa di akses oleh user yang teregister dan harus sudah login (is_login = true) 
+
+header:
+email
+
+input
+config_product ([{"id":1,"price":20000,"quantity":1}, {"id":2,"price":30000,"quantity":1}])
+
+9. /post_order
+merupakan API untuk menambakan ke order berdasarkan cart yang kita buat. sambil menunggu pembayaran sehingga status order yang diberikan pada API ini adalah "UNPAID" dan memasukan kedalam history order. API ini hanya bisa di akses oleh user yang teregister dan harus sudah login (is_login = true) 
+
+header:
+email
+
+input:
+cart_id
+
+10. /paid_order
+merupakan API untuk melunasi order yang sudah di buat sebelumnya. di sini akan membuat status order menjadi "PAID" dan menambahkan ke dalam history order. API ini hanya bisa di akses oleh user yang teregister dan harus sudah login (is_login = true) 
+
+header:
+email
+
+input:
+order_id
+
+11. /history_order
+merupakan API untuk menampilkan seluruh transaksi yang dilakukan user di dalam sistem (terbaru ke yang terlama). API ini hanya bisa di akses oleh user yang teregister dan harus sudah login (is_login = true) 
+
+header:
+email
+
+input:
+tidak ada
+
+
+

@@ -3,7 +3,6 @@ package usecase
 import (
 	"bluebird/model"
 	"bluebird/repository"
-	"encoding/json"
 	"errors"
 )
 
@@ -23,55 +22,31 @@ func NewCart(c repository.CartRepository, p repository.ProductRepository, u repo
 
 func (c *Cart) AddToCart(email string, cart *model.AddToCart) (*model.RespAddToCart, error) {
 
+	// get user berdasarkan email
 	user, err := c.UserRepository.GetUser(email)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
 	}
 
-	if user.IsLogin != true || user.Id == 0 {
-		return nil, errors.New("Access Denied")
+	// validasi user login dan sudah terdaftar
+	if err = user.IsLoginUser(); err != nil {
+		return nil, err
 	}
 
+	// verifikasi input
 	if cart.ConfigProduct == "" {
 		return nil, errors.New("Missing Parameter")
 	}
 
-	var (
-		totalPayment  float64
-		totalQuantity int
-	)
-
-	var confiqCart []model.ConfigProduct
-	if err := json.Unmarshal([]byte(cart.ConfigProduct), &confiqCart); err != nil {
-		return nil, errors.New("Type Config is wrong")
+	// get all product
+	allProduct, err := c.ProductRepository.GetAllProduct()
+	if err != nil {
+		return nil, errors.New("Internal Server Error")
 	}
 
-	var respConfigCart []model.DetailConfig
-
-	for _, data := range confiqCart {
-
-		product, err := c.ProductRepository.GetProductById(data.Id)
-		if err != nil {
-			return nil, errors.New("Internal Server Error")
-		}
-
-		if product.Stock == 0 || product.Stock < data.Quantity {
-			return nil, errors.New("Product out of stock")
-		}
-
-		if product.Price != data.Price {
-			return nil, errors.New("Price was Changed")
-		}
-
-		respConfigCart = append(respConfigCart, model.DetailConfig{
-			Id:          product.Id,
-			ProductName: product.ProductName,
-			Price:       data.Price,
-			Quantity:    data.Quantity,
-		})
-
-		totalPayment += data.Price
-		totalQuantity += data.Quantity
+	totalPayment, totalQuantity, respConfigCart, err := model.ConfigProductOrder(cart.ConfigProduct, allProduct)
+	if err != nil {
+		return nil, err
 	}
 
 	addCart := &model.Cart{
@@ -81,6 +56,7 @@ func (c *Cart) AddToCart(email string, cart *model.AddToCart) (*model.RespAddToC
 		Quantity:      totalQuantity,
 	}
 
+	// validasi cart yang masih aktif
 	activeCart, err := c.CartRepository.GetActiveCart(user.Id)
 	if err != nil {
 		return nil, errors.New("Internal Server Error")
@@ -88,11 +64,17 @@ func (c *Cart) AddToCart(email string, cart *model.AddToCart) (*model.RespAddToC
 
 	var dataCart *model.Cart
 	if activeCart.Id != 0 {
-		dataCart, err = c.CartRepository.UpdateCart(addCart)
+		// update cart
+		activeCart.ConfigProduct = cart.ConfigProduct
+		activeCart.TotalPayment = totalPayment
+		activeCart.Quantity = totalQuantity
+		dataCart, err = c.CartRepository.UpdateCart(activeCart)
 		if err != nil {
 			return nil, errors.New("Internal Server Error")
 		}
 	} else {
+
+		// insert cart
 		dataCart, err = c.CartRepository.InsertCart(addCart)
 		if err != nil {
 			return nil, errors.New("Internal Server Error")
